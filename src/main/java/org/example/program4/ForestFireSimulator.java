@@ -199,16 +199,12 @@ public class ForestFireSimulator extends Application {
         Button pauseButton = new Button("Pause Simulation");
         pauseButton.setOnAction(e -> pauseSimulation());
 
-        // Create the Stop Simulation Button
-        Button stopButton = new Button("Stop Simulation");
-        stopButton.setOnAction(e -> stopSimulation());
-
         // Create the Reset Simulation Button
         Button resetButton = new Button("Reset Simulation");
-        resetButton.setOnAction(e -> resetSimulation(gridPane, probabilitySlider, windDirectionComboBox));
+        resetButton.setOnAction(e -> resetSimulation(probabilitySlider, windDirectionComboBox));
 
         // Create the HBox
-        HBox simulationButtonsBox = new HBox(startButton, pauseButton, stopButton, resetButton);
+        HBox simulationButtonsBox = new HBox(startButton, pauseButton, resetButton);
         simulationButtonsBox.setSpacing(10);
 
         return simulationButtonsBox;
@@ -409,7 +405,7 @@ public class ForestFireSimulator extends Application {
         // Create a timeline to control the simulation
         // The timeline will update the fire spread in the forest every 5 seconds
         return new Timeline(new KeyFrame(Duration.seconds(5), event -> {
-            System.out.println("Simulation Cycle # " + (simulationCycles + 1)); // Add this line
+            // System.out.println("Simulation Cycle # " + (simulationCycles + 1));
             boolean[][] burningCells = new boolean[GRID_SIZE][GRID_SIZE];
             for (int i = 0; i < GRID_SIZE; i++) {
                 for (int j = 0; j < GRID_SIZE; j++) {
@@ -498,39 +494,41 @@ public class ForestFireSimulator extends Application {
     }
 
     /**
-     * Stops the simulation.
-     */
-    private void stopSimulation() {
-        if (timeline != null) {
-            timeline.stop();
-        }
-        if (countdownTimeline != null) {
-            countdownTimeline.stop();
-        }
-    }
-
-    /**
      * Resets the simulation.
      *
-     * @param gridPane              the grid pane that represents the forest
      * @param probabilitySlider     the slider that controls the fire probability
      * @param windDirectionComboBox the combo box that controls the wind direction
      */
-    private void resetSimulation(GridPane gridPane, Slider probabilitySlider, ComboBox<String> windDirectionComboBox) {
+    private void resetSimulation(Slider probabilitySlider, ComboBox<String> windDirectionComboBox) {
+        // Stop the simulation timelines
         if (timeline != null) {
             timeline.stop();
             timeline = null;
         }
+
+        // Stop the countdown timeline
+        if (countdownTimeline != null) {
+            countdownTimeline.stop();
+            countdownTimeline = null;
+        }
+
+        // Reset the forest and the simulation cycles
         forest = new Forest();
         simulationCycles = 0;
-        simulationCyclesLabel.setText("Simulation Cycles: 0");
-        countdownLabel.setText("Next cycle in: 5 seconds");
-        probabilitySlider.setValue(0.5);
+
+        // Set the fire probability and wind direction to their default values
+        probabilitySlider.setValue(0.3);
         windDirectionComboBox.setValue("N");
 
-        gridPane.getChildren().clear();
+        // Reset the simulation cycles label and the countdown label
+        simulationCyclesLabel.setText("Simulation Cycles: 0");
+        countdownLabel.setText("Next cycle in: 5 seconds");
 
-        // Add new rectangles
-        populateGrid(gridPane);
+        // Reset the forestGrid
+        for (int i = 0; i < GRID_SIZE; i++) {
+            for (int j = 0; j < GRID_SIZE; j++) {
+                forestGrid[i][j].setFill(Color.GREEN);
+            }
+        }
     }
 }
