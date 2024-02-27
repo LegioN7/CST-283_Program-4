@@ -1,18 +1,5 @@
 package org.example.program4;
 
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
-import javafx.application.Application;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.Scene;
-import javafx.scene.control.*;
-import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
-import javafx.stage.Stage;
-import javafx.util.Duration;
-
 // CST-283
 // Aaron Pelto
 // Winter 2024
@@ -43,6 +30,22 @@ import javafx.util.Duration;
 //      The probability of burning downstream from the wind will increase 10% and upstream from the wind will decrease 10% based on that wind direction.
 //              For example, if the general probability of burning is 30% and the wind is from the north, then the simulation probability for burning should be north (up) 20%, east (right) 30%, south (down) 40%, and west (30%).
 //                  Be sure that the wind adjustment does not push the probability number for a direction outside the 0.0...1.0 range.
+
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
+import javafx.stage.Stage;
+import javafx.util.Duration;
+
 
 /**
  * This class represents a forest fire simulator application.
@@ -96,6 +99,10 @@ public class ForestFireSimulator extends Application {
      * The timeline that controls the countdown.
      */
     private Timeline countdownTimeline;
+    /**
+     * A 2D array of rectangles representing the cells in the forest grid.
+     */
+    private final Rectangle[][] forestGrid = new Rectangle[GRID_SIZE][GRID_SIZE];
 
     /**
      * The main method that launches the application.
@@ -114,6 +121,8 @@ public class ForestFireSimulator extends Application {
      */
     @Override
     public void start(Stage stage) {
+        // Create the grid pane to represent the forest
+        this.gridPane = createForestGrid();
         // Create the GUI for the forest fire simulator
         createForestFireSimulatorGUI();
         // Set the title, scene, and show the stage
@@ -176,8 +185,8 @@ public class ForestFireSimulator extends Application {
     /**
      * Creates a HBox with buttons to start, pause, stop, and reset the simulation.
      *
-     * @param gridPane            the grid pane that represents the forest
-     * @param probabilitySlider   the slider that controls the fire probability
+     * @param gridPane              the grid pane that represents the forest
+     * @param probabilitySlider     the slider that controls the fire probability
      * @param windDirectionComboBox the combo box that controls the wind direction
      * @return the HBox with buttons
      */
@@ -238,6 +247,9 @@ public class ForestFireSimulator extends Application {
      * Creates the GUI for the forest fire simulator.
      */
     private void createForestFireSimulatorGUI() {
+        // Create the GUI for the forest fire simulator
+        // The GUI includes a grid pane to represent the forest, sliders to set the fire probability, and a combo box to set the wind direction
+        // The GUI also includes buttons to start, pause, stop, and reset the simulation, and labels to display the number of simulation cycles and the countdown to the next simulation cycle
         VBox fireProbabilityBox = createFireProbabilityBox();
         VBox windDirectionBox = createWindDirectionBox();
         HBox simulationButtonsBox = createSimulationButtonsBox(gridPane, (Slider) fireProbabilityBox.getChildren().get(1), (ComboBox<String>) windDirectionBox.getChildren().get(1));
@@ -259,17 +271,13 @@ public class ForestFireSimulator extends Application {
      * @return the grid pane with rectangles
      */
     private GridPane createForestGrid() {
-        // Create the grid pane
         GridPane gridPane = new GridPane();
-        // Add rectangles to the grid pane to represent the cells in the forest
         for (int i = 0; i < GRID_SIZE; i++) {
             for (int j = 0; j < GRID_SIZE; j++) {
-                // Create a rectangle to represent the cell and set its size to 40x40
                 Rectangle rectangle = new Rectangle(40, 40);
-                // Set the color of the rectangle to green to represent untouched forest
                 rectangle.setFill(Color.GREEN);
-                // Add the rectangle to the grid pane
                 gridPane.add(rectangle, i, j);
+                forestGrid[i][j] = rectangle;
             }
         }
         return gridPane;
@@ -301,23 +309,25 @@ public class ForestFireSimulator extends Application {
         // Update the forest grid in the GUI based on the state of the forest
         for (int i = 0; i < GRID_SIZE; i++) {
             for (int j = 0; j < GRID_SIZE; j++) {
-                Rectangle rectangle = (Rectangle) gridPane.getChildren().get(i * GRID_SIZE + j);
+                // Get the cell at the specified position
+                // The cell can be untouched, burning, or burned
+                Rectangle rectangle = forestGrid[i][j];
                 Forest.Burn burn = forest.getBurn(i, j);
                 // If the cell is burning, change its color to red
                 if (burn.isBurning()) {
-                    // Increment the burn duration
-                    burn.incrementBurnDuration();
-                    if (burn.getBurnDuration() <= 2) {
+                    if (burn.getBurnDuration() < 2) {
                         rectangle.setFill(Color.RED);
                     } else {
                         // If the cell has been burning for 2 time units, change its color to yellow on the 3rd
                         rectangle.setFill(Color.YELLOW);
                     }
-                    System.out.println("Tile at (" + i + ", " + j + ") is on fire. Burn duration: " + burn.getBurnDuration());
+                    // Debug Statement
+                    // System.out.println("Tile at (" + i + ", " + j + ") is on fire. Burn duration: " + burn.getBurnDuration());
                 } else if (burn.isBurned()) {
                     // If the cell is burned, change its color to yellow
                     rectangle.setFill(Color.YELLOW);
-                    System.out.println("Tile at (" + i + ", " + j + ") is scorched. Burn duration: " + burn.getBurnDuration());
+                    // Debug Statement
+                    //System.out.println("Tile at (" + i + ", " + j + ") is scorched. Burn duration: " + burn.getBurnDuration());
                 } else {
                     // If the cell is untouched, keep its color green
                     rectangle.setFill(Color.GREEN);
@@ -337,7 +347,10 @@ public class ForestFireSimulator extends Application {
         System.out.println("Simulation Start # " + (simulationCycles + 1));
         // Start the fire in the center of the forest
         startFire();
+        // Update the forest grid in the GUI
+        updateGrid();
         countdownTimeline = createCountdownTimeline();
+        // Set the countdown timeline to run indefinitely
         countdownTimeline.setCycleCount(Timeline.INDEFINITE);
         countdownTimeline.play();
         // Create the fire spread timeline
@@ -385,11 +398,12 @@ public class ForestFireSimulator extends Application {
     }
 
     /**
-     * Creates the fire spread timeline for the simulation.
+     * Starts the simulation with the given fire probability and wind direction.
+     * This method initializes the simulation, starts the fire in the center of the forest,
+     * and begins the countdown and fire spread timelines.
      *
      * @param probability   the fire probability
      * @param windDirection the wind direction
-     * @return the fire spread timeline
      */
     private Timeline createFireSpreadTimeline(double probability, String windDirection) {
         // Create a timeline to control the simulation
@@ -399,8 +413,10 @@ public class ForestFireSimulator extends Application {
             boolean[][] burningCells = new boolean[GRID_SIZE][GRID_SIZE];
             for (int i = 0; i < GRID_SIZE; i++) {
                 for (int j = 0; j < GRID_SIZE; j++) {
-                    if (forest.getBurn(i, j).isBurning()) {
+                    Forest.Burn burn = forest.getBurn(i, j);
+                    if (burn.isBurning()) {
                         burningCells[i][j] = true;
+                        burn.incrementBurnDuration();
                     }
                 }
             }
@@ -430,6 +446,7 @@ public class ForestFireSimulator extends Application {
 
     /**
      * Updates the fire spread in the forest based on the given fire probability and wind direction.
+     * This method iterates over all cells and, if a cell is burning, it attempts to spread the fire to adjacent cells.
      *
      * @param burningCells  the cells that are currently burning
      * @param probability   the fire probability

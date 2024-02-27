@@ -139,7 +139,7 @@ public class Forest {
      * The duration of the burn is represented by an integer value.
      * The state of the burn is represented by an instance of the BurnState enum.
      */
-    public class Burn {
+    public static class Burn {
         /**
          * Indicates whether the cell is currently burning.
          */
