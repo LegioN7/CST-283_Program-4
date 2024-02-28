@@ -5,7 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="bfb99a06-5ad0-463d-aa2b-54647761bc55" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/example/program4/ForestCell.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/example/program4/Forest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/program4/Forest.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/example/program4/ForestFireSimulator.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/program4/ForestFireSimulator.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -16,8 +18,8 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="Class" />
         <option value="FxmlFile" />
+        <option value="Class" />
       </list>
     </option>
   </component>
@@ -111,12 +113,24 @@
       <workItem from="1708290996667" duration="9764000" />
       <workItem from="1708316336763" duration="6000" />
       <workItem from="1708999971766" duration="2832000" />
-      <workItem from="1709003621219" duration="562000" />
+      <workItem from="1709003621219" duration="859000" />
+      <workItem from="1709087189124" duration="6999000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
   <component name="VcsManagerConfiguration">
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />

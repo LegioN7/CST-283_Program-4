@@ -59,16 +59,18 @@ public class ForestFireSimulator extends Application {
      * The size of the grid that represents the forest.
      */
     private static final int GRID_SIZE = 11;
-
+    /**
+     * A 2D array of rectangles representing the cells in the forest grid.
+     */
+    private final ForestCell[][] forestGrid = new ForestCell[GRID_SIZE][GRID_SIZE];
     /**
      * The grid pane that represents the forest in the GUI.
      */
     private GridPane gridPane;
-
     /**
      * The forest that is being simulated.
      */
-    private Forest forest = new Forest();
+    private Forest forest = new Forest(GRID_SIZE, forestGrid);
 
     /**
      * The scene of the application.
@@ -99,10 +101,21 @@ public class ForestFireSimulator extends Application {
      * The timeline that controls the countdown.
      */
     private Timeline countdownTimeline;
+
     /**
-     * A 2D array of rectangles representing the cells in the forest grid.
+     * The start button for the simulation.
      */
-    private final Rectangle[][] forestGrid = new Rectangle[GRID_SIZE][GRID_SIZE];
+    private Button startButton;
+
+    /**
+     * The pause button for the simulation.
+     */
+    private Button pauseButton;
+
+    /**
+     * The reset button for the simulation.
+     */
+    private Button resetButton;
 
     /**
      * The main method that launches the application.
@@ -123,6 +136,8 @@ public class ForestFireSimulator extends Application {
     public void start(Stage stage) {
         // Create the grid pane to represent the forest
         this.gridPane = createForestGrid();
+        // Create the forest with the grid of cells
+        this.forest = new Forest(GRID_SIZE, forestGrid);
         // Create the GUI for the forest fire simulator
         createForestFireSimulatorGUI();
         // Set the title, scene, and show the stage
@@ -148,6 +163,7 @@ public class ForestFireSimulator extends Application {
         probabilitySlider.setTooltip(new Tooltip("Set the probability of fire spreading"));
         // Create the Label for probability
         Label probabilityLabel = new Label();
+        probabilityLabel.setPadding(new Insets(10, 10, 10, 10));
         probabilitySlider.valueProperty().addListener((observable, oldValue, newValue) ->
                 // Set the probability label to the new value and format it to a percentage
                 probabilityLabel.setText(String.format("Selected Probability: %.0f%%", newValue.doubleValue() * 100))
@@ -171,13 +187,14 @@ public class ForestFireSimulator extends Application {
         // Create the ComboBox
         ComboBox<String> windDirectionComboBox = new ComboBox<>();
         // Add the wind directions to the combo box
-        windDirectionComboBox.getItems().addAll("N", "S", "E", "W");
+        windDirectionComboBox.getItems().addAll("NORTH", "SOUTH", "EAST", "WEST");
         // Set the default value to "N"
-        windDirectionComboBox.setValue("N");
+        windDirectionComboBox.setValue("NORTH");
         // Set the tooltip
         windDirectionComboBox.setTooltip(new Tooltip("Set the wind direction"));
         // Create the VBox
         VBox windDirectionBox = new VBox(title, windDirectionComboBox);
+        // Set the spacing for the VBox
         windDirectionBox.setSpacing(10);
         return windDirectionBox;
     }
@@ -192,16 +209,18 @@ public class ForestFireSimulator extends Application {
      */
     private HBox createSimulationButtonsBox(GridPane gridPane, Slider probabilitySlider, ComboBox<String> windDirectionComboBox) {
         // Create the Start Simulation Button
-        Button startButton = new Button("Start Simulation");
+        startButton = new Button("Start Simulation");
         startButton.setOnAction(e -> startSimulation(probabilitySlider.getValue(), windDirectionComboBox.getValue()));
 
         // Create the Pause Simulation Button
-        Button pauseButton = new Button("Pause Simulation");
+        pauseButton = new Button("Pause Simulation");
         pauseButton.setOnAction(e -> pauseSimulation());
+        pauseButton.setDisable(true);
 
         // Create the Reset Simulation Button
-        Button resetButton = new Button("Reset Simulation");
+        resetButton = new Button("Reset Simulation");
         resetButton.setOnAction(e -> resetSimulation(probabilitySlider, windDirectionComboBox));
+        resetButton.setDisable(true);
 
         // Create the HBox
         HBox simulationButtonsBox = new HBox(startButton, pauseButton, resetButton);
@@ -218,11 +237,16 @@ public class ForestFireSimulator extends Application {
     private VBox createSimulationCycleLabelsBox() {
         // Create the Simulation cycles label
         simulationCyclesLabel = new Label("Simulation Cycles: 0");
+
         // Create the Countdown label
         countdownLabel = new Label("Next cycle in: 5 seconds");
+
         // Create the VBox
         VBox simulationCycleLabelsBox = new VBox(simulationCyclesLabel, countdownLabel);
+
+        // Set the spacing for the VBox
         simulationCycleLabelsBox.setSpacing(10);
+
         return simulationCycleLabelsBox;
     }
 
@@ -232,10 +256,28 @@ public class ForestFireSimulator extends Application {
      *
      * @return the grid pane with rectangles
      */
-    private GridPane createForestGridPane() {
-        // Create the forest grid
-        GridPane gridPane = createForestGrid();
+    private GridPane createForestGrid() {
+        // Create the grid pane
+        GridPane gridPane = new GridPane();
+
+        // Iterate over the grid and create a rectangle for each cell
+        for (int i = 0; i < GRID_SIZE; i++) {
+            for (int j = 0; j < GRID_SIZE; j++) {
+                // Create a rectangle for the cell and set the size to 40x40
+                Rectangle rectangle = new Rectangle(40, 40);
+                // Set the initial color of the cell to green
+                rectangle.setFill(Color.GREEN);
+                // Add the rectangle to the grid pane
+                gridPane.add(rectangle, i, j);
+                // Add the rectangle to the 2D array of rectangles
+                forestGrid[i][j] = new ForestCell(rectangle);
+            }
+        }
+
+        // Set the grid lines to be visible
         gridPane.setGridLinesVisible(true);
+
+        // Return the grid pane
         return gridPane;
     }
 
@@ -247,85 +289,52 @@ public class ForestFireSimulator extends Application {
         // The GUI includes a grid pane to represent the forest, sliders to set the fire probability, and a combo box to set the wind direction
         // The GUI also includes buttons to start, pause, stop, and reset the simulation, and labels to display the number of simulation cycles and the countdown to the next simulation cycle
         VBox fireProbabilityBox = createFireProbabilityBox();
-        VBox windDirectionBox = createWindDirectionBox();
-        HBox simulationButtonsBox = createSimulationButtonsBox(gridPane, (Slider) fireProbabilityBox.getChildren().get(1), (ComboBox<String>) windDirectionBox.getChildren().get(1));
-        VBox simulationCycleLabelsBox = createSimulationCycleLabelsBox();
-        GridPane forestGridPane = createForestGridPane();
 
+        // Create the wind direction box
+        VBox windDirectionBox = createWindDirectionBox();
+
+        // Create the simulations hBox
+        HBox simulationButtonsBox = createSimulationButtonsBox(gridPane, (Slider) fireProbabilityBox.getChildren().get(1), (ComboBox<String>) windDirectionBox.getChildren().get(1));
+
+        // Create the simulation cycle labels box
+        VBox simulationCycleLabelsBox = createSimulationCycleLabelsBox();
+
+        // Create the forest grid pane
+        GridPane forestGridPane = createForestGrid();
+
+        // Create the VBox for the GUI
         VBox vbox = new VBox(fireProbabilityBox, new Separator(), windDirectionBox, new Separator(), simulationButtonsBox, new Separator(), simulationCycleLabelsBox, new Separator(), forestGridPane);
+
+        // Set the padding, spacing, alignment, and fill width for the VBox
         vbox.setSpacing(10);
         vbox.setAlignment(Pos.CENTER);
         vbox.setFillWidth(true);
 
+        // Create the scene with the VBox
         scene = new Scene(vbox);
     }
 
-    /**
-     * Creates a grid pane with rectangles to represent the cells in the forest.
-     * Each cell is initially green to represent untouched forest.
-     *
-     * @return the grid pane with rectangles
-     */
-    private GridPane createForestGrid() {
-        GridPane gridPane = new GridPane();
-        for (int i = 0; i < GRID_SIZE; i++) {
-            for (int j = 0; j < GRID_SIZE; j++) {
-                Rectangle rectangle = new Rectangle(40, 40);
-                rectangle.setFill(Color.GREEN);
-                gridPane.add(rectangle, i, j);
-                forestGrid[i][j] = rectangle;
-            }
-        }
-        return gridPane;
-    }
-
-    /**
-     * Populates the given GridPane with rectangles to represent the cells in the forest.
-     * Each cell is initially green to represent untouched forest.
-     *
-     * @param gridPane the GridPane to populate
-     */
-    private void populateGrid(GridPane gridPane) {
-        // Add rectangles to the grid pane to represent the cells in the forest
-        // The cells are initially green to represent untouched forest
-        // IntelliJ offered to adjust the grid_size requirement by calling the constant from the class
-        for (int i = 0; i < ForestFireSimulator.GRID_SIZE; i++) {
-            for (int j = 0; j < ForestFireSimulator.GRID_SIZE; j++) {
-                Rectangle rectangle = new Rectangle(30, 30);
-                rectangle.setFill(Color.GREEN);
-                gridPane.add(rectangle, i, j);
-            }
-        }
-    }
 
     /**
      * Updates the forest grid in the GUI based on the state of the forest.
      */
     private void updateGrid() {
-        // Update the forest grid in the GUI based on the state of the forest
+        // Get the grid of cells from the forest
+        ForestCell[][] grid = forest.getGrid();
+        // Iterate over the grid and update the rectangles based on the state of the cells
         for (int i = 0; i < GRID_SIZE; i++) {
             for (int j = 0; j < GRID_SIZE; j++) {
-                // Get the cell at the specified position
-                // The cell can be untouched, burning, or burned
-                Rectangle rectangle = forestGrid[i][j];
-                Forest.Burn burn = forest.getBurn(i, j);
-                // If the cell is burning, change its color to red
-                if (burn.isBurning()) {
-                    if (burn.getBurnDuration() < 2) {
-                        rectangle.setFill(Color.RED);
-                    } else {
-                        // If the cell has been burning for 2 time units, change its color to yellow on the 3rd
-                        rectangle.setFill(Color.YELLOW);
-                    }
-                    // Debug Statement
-                    // System.out.println("Tile at (" + i + ", " + j + ") is on fire. Burn duration: " + burn.getBurnDuration());
-                } else if (burn.isBurned()) {
-                    // If the cell is burned, change its color to yellow
+                // Get the rectangle and state of the cell
+                Rectangle rectangle = grid[i][j].getRectangle();
+                ForestCell.State state = grid[i][j].getState();
+                // If the cell is burning, set the rectangle to red
+                if (state == ForestCell.State.BURNING) {
+                    rectangle.setFill(Color.RED);
+                    // If the cell is scorched, set the rectangle to yellow
+                } else if (state == ForestCell.State.SCORCHED) {
                     rectangle.setFill(Color.YELLOW);
-                    // Debug Statement
-                    //System.out.println("Tile at (" + i + ", " + j + ") is scorched. Burn duration: " + burn.getBurnDuration());
+                    // If the cell is untouched, set the rectangle to green
                 } else {
-                    // If the cell is untouched, keep its color green
                     rectangle.setFill(Color.GREEN);
                 }
             }
@@ -355,6 +364,9 @@ public class ForestFireSimulator extends Application {
         timeline.setCycleCount(Timeline.INDEFINITE);
         // Start the simulation
         timeline.play();
+        pauseButton.setDisable(false);
+        startButton.setDisable(true);
+        resetButton.setDisable(false);
     }
 
     /**
@@ -363,7 +375,7 @@ public class ForestFireSimulator extends Application {
     private void startFire() {
         // Start the fire in the center of the forest
         int center = GRID_SIZE / 2;
-        forest.getBurn(center, center).setBurning(true);
+        forestGrid[center][center].setState(ForestCell.State.BURNING);
         // Update the forest grid in the GUI
         updateGrid();
         // Increment the number of simulation cycles to 1
@@ -405,17 +417,19 @@ public class ForestFireSimulator extends Application {
         // Create a timeline to control the simulation
         // The timeline will update the fire spread in the forest every 5 seconds
         return new Timeline(new KeyFrame(Duration.seconds(5), event -> {
-            // System.out.println("Simulation Cycle # " + (simulationCycles + 1));
             boolean[][] burningCells = new boolean[GRID_SIZE][GRID_SIZE];
             for (int i = 0; i < GRID_SIZE; i++) {
                 for (int j = 0; j < GRID_SIZE; j++) {
-                    Forest.Burn burn = forest.getBurn(i, j);
-                    if (burn.isBurning()) {
+                    ForestCell.State state = forest.getGrid()[i][j].getState();
+                    // If the cell is burning, set the corresponding cell in the burningCells array to true
+                    if (state == ForestCell.State.BURNING) {
+                        // Set the cell to burning
                         burningCells[i][j] = true;
-                        burn.incrementBurnDuration();
+                        forest.getGrid()[i][j].setState(ForestCell.State.BURNING);
                     }
                 }
             }
+
             // Update the fire spread in the forest
             updateFireSpread(burningCells, probability, windDirection);
             // Increment the number of simulation cycles
@@ -433,6 +447,9 @@ public class ForestFireSimulator extends Application {
                     alert.setHeaderText(null);
                     alert.setContentText("The simulation has completed. It took " + simulationCycles + " simulation cycle time units for the fire to go out.");
                     alert.showAndWait();
+                    startButton.setDisable(true);
+                    pauseButton.setDisable(true);
+                    resetButton.setDisable(false);
                 });
             }
             // Update the countdown label
@@ -472,8 +489,8 @@ public class ForestFireSimulator extends Application {
         // If there are still cells burning, the fire is still spreading
         for (int i = 0; i < GRID_SIZE; i++) {
             for (int j = 0; j < GRID_SIZE; j++) {
-                Forest.Burn burn = forest.getBurn(i, j);
-                if (burn.isBurning()) {
+                ForestCell.State state = forest.getGrid()[i][j].getState();
+                if (state == ForestCell.State.BURNING) {
                     return false;
                 }
             }
@@ -486,6 +503,9 @@ public class ForestFireSimulator extends Application {
      */
     private void pauseSimulation() {
         if (timeline != null) {
+            System.out.println("Simulation Paused");
+            pauseButton.setDisable(true);
+            startButton.setDisable(false);
             timeline.pause();
         }
         if (countdownTimeline != null) {
@@ -502,6 +522,7 @@ public class ForestFireSimulator extends Application {
     private void resetSimulation(Slider probabilitySlider, ComboBox<String> windDirectionComboBox) {
         // Stop the simulation timelines
         if (timeline != null) {
+            System.out.println("Simulation Reset");
             timeline.stop();
             timeline = null;
         }
@@ -513,21 +534,27 @@ public class ForestFireSimulator extends Application {
         }
 
         // Reset the forest and the simulation cycles
-        forest = new Forest();
+        forest = new Forest(GRID_SIZE, forestGrid);
         simulationCycles = 0;
 
         // Set the fire probability and wind direction to their default values
         probabilitySlider.setValue(0.3);
-        windDirectionComboBox.setValue("N");
+        windDirectionComboBox.setValue("NORTH");
 
         // Reset the simulation cycles label and the countdown label
         simulationCyclesLabel.setText("Simulation Cycles: 0");
         countdownLabel.setText("Next cycle in: 5 seconds");
 
+        // Reset the buttons
+        startButton.setDisable(false);
+        pauseButton.setDisable(true);
+        resetButton.setDisable(true);
+
         // Reset the forestGrid
         for (int i = 0; i < GRID_SIZE; i++) {
             for (int j = 0; j < GRID_SIZE; j++) {
-                forestGrid[i][j].setFill(Color.GREEN);
+                forestGrid[i][j].setState(ForestCell.State.UNTOUCHED);
+                forestGrid[i][j].getRectangle().setFill(Color.GREEN);
             }
         }
     }
